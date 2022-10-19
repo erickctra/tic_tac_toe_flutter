@@ -35,6 +35,7 @@ class _GamePageState extends State<GamePage> {
           children: [
             _headerText(),
             _gameContainer(),
+            _restartButton(),
           ],
         ),
       ),
@@ -81,13 +82,24 @@ class _GamePageState extends State<GamePage> {
     return InkWell(
       onTap: () {
         // on click of box
+        if (gameEnd || occupied[index].isNotEmpty) {
+          // return if game already ended or already clicked
+          return;
+        }
+
         setState(() {
           occupied[index] = currentPlayer;
           changeTurn();
+          checkForWinner();
+          checkForDraw();
         });
       },
       child: Container(
-        color: Colors.black26,
+        color: occupied[index].isEmpty
+            ? Colors.black26
+            : occupied[index] == PLAYER_X
+                ? Colors.blue
+                : Colors.orange,
         margin: const EdgeInsets.all(8),
         child: Center(
             child: Text(
@@ -100,11 +112,84 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
+  _restartButton() {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          initializeGame();
+        });
+      },
+      child: const Text("Restart Game"),
+    );
+  }
+
   changeTurn() {
     if (currentPlayer == PLAYER_X) {
       currentPlayer = PLAYER_Y;
     } else {
       currentPlayer = PLAYER_X;
     }
+  }
+
+  checkForWinner() {
+    // Define winning positions
+    List<List<int>> winningList = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6]
+    ];
+
+    for (var winningPos in winningList) {
+      String playerPosition0 = occupied[winningPos[0]];
+      String playerPosition1 = occupied[winningPos[1]];
+      String playerPosition2 = occupied[winningPos[2]];
+
+      if (playerPosition0.isNotEmpty) {
+        if (playerPosition0 == playerPosition1 &&
+            playerPosition0 == playerPosition2) {
+          // all equal means player won
+          showGameOverMessage("Player $playerPosition0 Won");
+          gameEnd = true;
+          return;
+        }
+      }
+    }
+  }
+
+  checkForDraw() {
+    if (gameEnd) {
+      return;
+    }
+
+    bool draw = true;
+    for (var occupiedPlayer in occupied) {
+      if (occupiedPlayer.isEmpty) {
+        // at least one is empty not all are filled
+        draw = false;
+      }
+    }
+
+    if (draw) {
+      showGameOverMessage("Draw");
+      gameEnd = true;
+    }
+  }
+
+  showGameOverMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            "Game Over \n $message",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 20,
+            ),
+          )),
+    );
   }
 }
